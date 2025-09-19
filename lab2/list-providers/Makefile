@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -Wall -Wextra -std=c++11
+CXXFLAGS = -Wall -Wextra
 LDFLAGS = -lbcrypt
 SRCS = list-providers.cpp
 TARGET = list-providers.exe
