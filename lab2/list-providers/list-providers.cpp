@@ -8,7 +8,7 @@ bool process_status_error(NTSTATUS status) {
     std::cerr << "Invalid parameter" << std::endl;
     return 1;
   } else if (status == STATUS_BUFFER_TOO_SMALL) {
-    std::cerr << "Invalid parameter" << std::endl;
+    std::cerr << "Buffer too small" << std::endl;
     return 1;
   }
   return 0;
