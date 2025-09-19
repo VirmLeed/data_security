@@ -1,4 +1,4 @@
-import argparse 
+import argparse
 import caesar_cypher
 import keyword_cypher
 from pathlib import Path
@@ -12,7 +12,7 @@ def resolve_file(text: str):
     return text
 
 
-def main(text: str, alphabet: str, shift: int, keyword: str, out: str = None, debug: bool = False) -> None:
+def main(text: str, alphabet: str, shift: int, keyword: str, out: str | None = None, debug: bool = False) -> None:
     text = resolve_file(text)
     alphabet = resolve_file(alphabet)
     keyword = resolve_file(keyword)
