@@ -3,17 +3,6 @@
 #include <iostream>
 #include <ntstatus.h>
 
-bool process_status_error(NTSTATUS status) {
-  if (status == STATUS_INVALID_PARAMETER) {
-    std::cerr << "Invalid parameter" << std::endl;
-    return 1;
-  } else if (status == STATUS_BUFFER_TOO_SMALL) {
-    std::cerr << "Buffer too small" << std::endl;
-    return 1;
-  }
-  return 0;
-}
-
 int main() {
   ULONG buffer_size = 0;
   // PCRYPT - pointer to struct
@@ -22,13 +11,17 @@ int main() {
 
   // get provider data size
   status = BCryptEnumRegisteredProviders(&buffer_size, 0);
-  if (process_status_error(status))
-    return 1;
+  if (status != STATUS_SUCCESS) {
+      std::cerr << "Error: " << std::hex << status << std::endl;
+      return 1;
+  }
 
   // fill provider data
   status = BCryptEnumRegisteredProviders(&buffer_size, &providers);
-  if (process_status_error(status))
-    return 1;
+  if (status != STATUS_SUCCESS) {
+      std::cerr << "Error: " << std::hex << status << std::endl;
+      return 1;
+  }
 
   ULONG count = providers->cProviders;
   std::cout << "Provider count: " << count << std::endl;
