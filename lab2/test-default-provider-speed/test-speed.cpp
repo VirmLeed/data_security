@@ -79,6 +79,7 @@ int main(int argc, char* argv[]) {
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
     if (duration.count()) {
+        std::cout << "File size: " << filesize / 1024 << "KB" << std::endl;
         std::cout << "Encryption speed: " << (filesize / duration.count()) / 1024 << "KB/ms" << std::endl;
     } else {
         std::cout << "Encryption was too quick" << std::endl;
