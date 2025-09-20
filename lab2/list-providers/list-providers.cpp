@@ -1,35 +1,31 @@
 #include <windows.h>
-#include <bcrypt.h>
+#include <wincrypt.h>
 #include <iostream>
 #include <ntstatus.h>
 
 int main() {
-  ULONG buffer_size = 0;
-  // PCRYPT - pointer to struct
-  PCRYPT_PROVIDERS providers = nullptr;
-  NTSTATUS status;
+    DWORD index = 0;
+    DWORD provider_type = 0;
+    DWORD provider_name_size = 0;
+    LPSTR provider_name = nullptr;
 
-  // get provider data size
-  status = BCryptEnumRegisteredProviders(&buffer_size, 0);
-  if (status != STATUS_SUCCESS) {
-      std::cerr << "Error: " << std::hex << status << std::endl;
-      return 1;
-  }
+    while (CryptEnumProviders(index, 0, 0, &provider_type, 0, &provider_name_size)) {
+        if (!(provider_name = (LPSTR)malloc(provider_name_size))) {
+            std::cerr << "Couldn't allocate provider name buffer" << std::endl;
+            exit(1);
+        }
 
-  // fill provider data
-  status = BCryptEnumRegisteredProviders(&buffer_size, &providers);
-  if (status != STATUS_SUCCESS) {
-      std::cerr << "Error: " << std::hex << status << std::endl;
-      return 1;
-  }
+        if (!CryptEnumProviders(index++, 0, 0, &provider_type, provider_name, &provider_name_size)) {
+            std::cerr << "Couldn't fetch provider name" << std::endl;
+            exit(1);
+        }
 
-  ULONG count = providers->cProviders;
-  std::cout << "Provider count: " << count << std::endl;
-  for (ULONG i = 0; i < count; i++) {
-    std::wcout << providers->rgpszProviders[i] << std::endl;
-  }
+        std::cout << provider_name << std::endl;
 
-  BCryptFreeBuffer(providers);
+        free(provider_name);
+    }
+
+    std::cout << "Provider amount: " << index;
 
   return 0;
 }
