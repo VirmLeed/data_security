@@ -3,7 +3,6 @@
 #include <iostream>
 #include <fstream>
 #include <chrono>
-#include <filesystem>
 
 #define ENCRYPT_ALGORITHM CALG_RC2
 #define ENCRYPT_BLOCK_SIZE 64
@@ -44,10 +43,12 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    // How many bytes to encrypt at a time
     DWORD block_len = 1000 - 1000 % ENCRYPT_BLOCK_SIZE;
+    // RSA_FULL wants one extra block (from docs)
     DWORD buf_len = block_len + ENCRYPT_BLOCK_SIZE;
     char* buffer = nullptr;
-
+    // Allocate buffer
     if (!(buffer = (char*)malloc(buf_len))) {
         std::cout << "Couldn't allocate buffer memory" << std::endl;
         return 1;
@@ -57,13 +58,16 @@ int main(int argc, char* argv[]) {
     DWORD block_count = 0;
     auto start = std::chrono::high_resolution_clock::now();
     do {
+        // Read part of a file
         input_stream.read(buffer, ENCRYPT_BLOCK_SIZE);
         DWORD bytes_read = input_stream.gcount();
 
+        // Check if it's final
         if (bytes_read < ENCRYPT_BLOCK_SIZE) {
             final = true;
         }
 
+        // encrypt
         if (!CryptEncrypt(key, 0, final, 0, (byte*)buffer, &bytes_read, ENCRYPT_BLOCK_SIZE)) {
             std::cout << "Couldn't encrypt" << std::endl;
             return 1;
