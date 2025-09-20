@@ -1,6 +1,6 @@
 CXX = g++
 CXXFLAGS = -Wall -Wextra
-LDFLAGS = -lbcrypt
+LDFLAGS =
 SRCS = test-speed.cpp
 TARGET = test-speed.exe
 
@@ -10,7 +10,7 @@ $(TARGET): $(SRCS)
 	$(CXX) $(CXXFLAGS) -o $(TARGET) $(SRCS) $(LDFLAGS)
 
 run: $(TARGET)
-	./$(TARGET)
+	./$(TARGET) ./test_file
 
 clean:
 	rm -f $(TARGET)

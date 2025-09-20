@@ -1,50 +1,77 @@
 #include <windows.h>
-#include <bcrypt.h>
+#include <wincrypt.h>
 #include <iostream>
-#include <ntstatus.h>
+#include <fstream>
+#include <chrono>
+
+#define ENCRYPT_ALGORITHM CALG_RC2
+#define ENCRYPT_BLOCK_SIZE 64
+
 
 int main(int argc, char* argv[]) {
-    if (argc != 3) {
-        std::cout << "Please, specify secret and text as two arguments" << std::endl;
+    if (argc != 2) {
+        std::cout << "Please, specify text file as argument" << std::endl;
         return 0;
     }
-    PUCHAR secret = reinterpret_cast<PUCHAR>(argv[1]);
-    PUCHAR text = reinterpret_cast<PUCHAR>(argv[2]);
-
-    NTSTATUS status;
-    // 0x00000001 - cipher operation; 0x00000040 - key derivation operation
-    ULONG symmetric_key_operation_filter = 0x00000041;
-    // 0x00000010 - signature operation; 0x00000004 - asymmetric encryption; 0x00000008 - secret agreement;
-    ULONG asymmetric_key_operation_filter = 0x0000001C;
-
-
-    // Symmetric keys
-    ULONG alg_count = 0;
-    BCRYPT_ALGORITHM_IDENTIFIER* alg_id = nullptr;
-    BCRYPT_ALG_HANDLE alg_handle = 0;
-    BCRYPT_KEY_HANDLE key_handle = 0;
-    // Filter algorithms
-    status = BCryptEnumAlgorithms(symmetric_key_operation_filter, &alg_count, &alg_id, 0);
-    if (status != STATUS_SUCCESS) {
-        std::cerr << "Error: " << std::hex << status << std::endl;
+    LPCSTR file = reinterpret_cast<LPCSTR>(argv[1]);
+    // Check input file
+    std::fstream input_stream(file, std::ios::binary | std::ios::in);
+    if (!input_stream.is_open()) {
+        std::cerr << "Error opening file: " << file << std::endl;
         return 1;
     }
 
-    std::cout << "Symmetric algorithm amount: " << alg_count << std::endl;
-    // For each algorithm
-    for (ULONG i = 0; i < alg_count; i++) {
-        std::wcout << alg_id[i].pszName << std::endl;
-        // Pick the default provider
-        status = BCryptOpenAlgorithmProvider(&alg_handle, alg_id[i].pszName, 0, 0);
-        if (status != STATUS_SUCCESS) {
-            std::cerr << "Error: " << std::hex << status << std::endl;
+    // Acquire provider
+    HCRYPTPROV provider = 0;
+    LPSTR container = nullptr;
+    LPSTR provider_type = nullptr;
+    DWORD provider_flags = CRYPT_VERIFYCONTEXT;
+    if (!CryptAcquireContextA(&provider, container, provider_type, PROV_RSA_FULL, provider_flags)) {
+        std::cout << "Couldn't acquire provider context" << std::endl;
+        return 1;
+    }
+
+    // Gen key
+    HCRYPTKEY key = 0;
+    if (!CryptGenKey(provider, CALG_RC2, 0, &key)) {
+        std::cout << "Couldn't generate key" << std::endl;
+        return 1;
+    }
+
+    DWORD block_len = 1000 - 1000 % ENCRYPT_BLOCK_SIZE;
+    DWORD buf_len = block_len + ENCRYPT_BLOCK_SIZE;
+    char* buffer = nullptr;
+
+    if (!(buffer = (char*)malloc(buf_len))) {
+        std::cout << "Couldn't allocate buffer memory" << std::endl;
+        return 1;
+    }
+
+    bool final = false;
+    DWORD block_count = 0;
+    auto start = std::chrono::high_resolution_clock::now();
+    do {
+        input_stream.read(buffer, ENCRYPT_BLOCK_SIZE);
+        DWORD bytes_read = input_stream.gcount();
+
+        if (bytes_read < ENCRYPT_BLOCK_SIZE) {
+            final = true;
+        }
+
+        if (!CryptEncrypt(key, 0, final, 0, (byte*)buffer, &bytes_read, ENCRYPT_BLOCK_SIZE)) {
+            std::cout << "Couldn't encrypt" << std::endl;
             return 1;
         }
 
-        // Create a key
-        //status = BCryptGenerateSymmetricKey(alg_handle, &key_handle, PUCHAR pbKeyObject, ULONG cbKeyObject, PUCHAR pbSecret, ULONG cbSecret, 0)
-    }
-    BCryptFreeBuffer(alg_id);
+        //std::cout << buffer << std::endl;
+        block_count++;
+    } while (!final);
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    std::cout << "Encryption took " << duration.count() << "ms" << std::endl;
 
+    input_stream.close();
+    CryptDestroyKey(key);
+    CryptReleaseContext(provider, 0);
     return 0;
 }
