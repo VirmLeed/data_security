@@ -81,6 +81,7 @@ int main(int argc, char* argv[]) {
     if (duration.count()) {
         std::cout << "File size: " << filesize / 1024 << "KB" << std::endl;
         std::cout << "Encryption speed: " << (filesize / duration.count()) / 1024 << "KB/ms" << std::endl;
+        std::cout << "Encryption took: " << duration.count() << "ms" << std::endl;
     } else {
         std::cout << "Encryption was too quick" << std::endl;
     }
