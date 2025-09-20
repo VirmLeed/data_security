@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <chrono>
+#include <filesystem>
 
 #define ENCRYPT_ALGORITHM CALG_RC2
 #define ENCRYPT_BLOCK_SIZE 64
@@ -20,6 +21,11 @@ int main(int argc, char* argv[]) {
         std::cerr << "Error opening file: " << file << std::endl;
         return 1;
     }
+    const auto fb = input_stream.tellg();
+    input_stream.seekg(0, std::ios::end);
+    const auto fe = input_stream.tellg();
+    const auto filesize = (fe-fb);
+    input_stream.seekg(0);
 
     // Acquire provider
     HCRYPTPROV provider = 0;
@@ -68,7 +74,11 @@ int main(int argc, char* argv[]) {
     } while (!final);
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-    std::cout << "Encryption took " << duration.count() << "ms" << std::endl;
+    if (duration.count()) {
+        std::cout << "Encryption speed: " << (filesize / duration.count()) / 1024 << "KB/ms" << std::endl;
+    } else {
+        std::cout << "Encryption was too quick" << std::endl;
+    }
 
     input_stream.close();
     CryptDestroyKey(key);
